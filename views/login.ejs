@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Dashboard - Login</title>
+    <link rel="stylesheet" href="/css/styles.css?v=1.0" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <i class="fas fa-project-diagram"></i>
+          <h1>Project Tracker</h1>
+          <p>Manage projects with role-based access</p>
+        </div>
+
+        <form class="login-form" id="loginForm" method="POST" action="/login">
+          <div class="input-group">
+            <label for="username">Email</label>
+            <input type="email" id="username" name="username" required />
+          </div>
+
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <button type="submit" class="login-btn">
+            <i class="fas fa-sign-in-alt"></i>
+            Sign In
+          </button>
+        </form>
+
+        <div class="demo-accounts">
+          <h3>Demo Accounts:</h3>
+          <div class="demo-grid">
+            <button
+              class="demo-btn admin"
+              type="button"
+              onclick="loginAsDemo('admin')"
+            >
+              <i class="fas fa-crown"></i>
+              Admin
+              <small>admin@demo.com</small>
+            </button>
+            <button
+              class="demo-btn manager"
+              type="button"
+              onclick="loginAsDemo('manager')"
+            >
+              <i class="fas fa-users"></i>
+              Manager
+              <small>manager@demo.com</small>
+            </button>
+            <button
+              class="demo-btn member"
+              type="button"
+              onclick="loginAsDemo('member')"
+            >
+              <i class="fas fa-user"></i>
+              Team Member
+              <small>member@demo.com</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="signup-link">
+          <p>Don't have an account? <a href="/register">Sign up here</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div class="message-container" id="messageContainer">
+      <div class="message" id="message"></div>
+    </div>
+
+    <script>
+      // Demo login function for server-side forms
+      function loginAsDemo(role) {
+        const credentials = {
+          admin: { email: "admin@demo.com", password: "demo123" },
+          manager: { email: "manager@demo.com", password: "demo123" },
+          member: { email: "member@demo.com", password: "demo123" },
+        };
+
+        const cred = credentials[role];
+        if (cred) {
+          // Show loading state
+          const button = event.target.closest(".demo-btn");
+          const originalText = button.innerHTML;
+          button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+          button.disabled = true;
+
+          // Fill in the form fields
+          document.getElementById("username").value = cred.email;
+          document.getElementById("password").value = cred.password;
+
+          // Submit the form automatically after a short delay
+          setTimeout(() => {
+            document.getElementById("loginForm").submit();
+          }, 500);
+        }
+      }
+
+      // Show message function
+      function showMessage(text, type = "info") {
+        const messageContainer = document.getElementById("messageContainer");
+        const messageElement = document.getElementById("message");
+
+        if (messageContainer && messageElement) {
+          messageElement.textContent = text;
+          messageContainer.className = `message-container ${type}`;
+          messageContainer.style.display = "block";
+
+          // Auto-hide after 5 seconds
+          setTimeout(() => {
+            messageContainer.style.display = "none";
+          }, 5000);
+        }
+      }
+
+      // Check for URL parameters to show messages
+      document.addEventListener("DOMContentLoaded", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get("error");
+        const message = urlParams.get("message");
+
+        if (error) {
+          showMessage(decodeURIComponent(error), "error");
+        } else if (message) {
+          showMessage(decodeURIComponent(message), "success");
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "name": "project-dashboard",
+  "version": "1.0.0",
+  "description": "A complete project management dashboard with role-based access control",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "project-management",
+    "dashboard",
+    "express",
+    "supabase",
+    "authentication",
+    "kanban"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2",
+    "@supabase/supabase-js": "^2.38.4",
+    "bcrypt": "^5.1.1",
+    "passport": "^0.6.0",
+    "passport-local": "^1.0.0",
+    "express-session": "^1.17.3",
+    "ejs": "^3.1.9",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
