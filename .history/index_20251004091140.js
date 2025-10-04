@@ -39,7 +39,9 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// ==========================================
 // MIDDLEWARE FUNCTIONS
+// ==========================================
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -64,7 +66,9 @@ const requireRole = (roles) => {
   };
 };
 
+// ==========================================
 // API ROUTES
+// ==========================================
 
 // Get current user info
 app.get("/api/user", requireAuth, (req, res) => {
@@ -231,7 +235,7 @@ app.post("/api/tasks", requireRole(["admin", "manager"]), async (req, res) => {
           title,
           description,
           project_id,
-          assigned_to: assigned_to || req.user.id, // Default to creator if no assignee
+          assigned_to,
           priority,
           due_date,
           created_by: req.user.id,
@@ -329,107 +333,6 @@ app.get("/api/users", requireRole(["admin"]), async (req, res) => {
   }
 });
 
-// Get single project by ID
-app.get("/api/projects/:id", requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const { data: project, error } = await supabase
-      .from("projects")
-      .select(
-        `
-        *,
-        created_by_user:users!created_by(email, first_name, last_name),
-        project_members(
-          id,
-          role,
-          user:users(id, email, first_name, last_name)
-        )
-      `
-      )
-      .eq("id", id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching project:", error);
-      return res.status(404).json({ error: "Project not found" });
-    }
-
-    // Check if user has access to this project
-    if (req.user.role !== "admin") {
-      const { data: userProject } = await supabase
-        .from("project_members")
-        .select("id")
-        .eq("project_id", id)
-        .eq("user_id", req.user.id)
-        .single();
-
-      if (!userProject) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-    }
-
-    res.json(project);
-  } catch (err) {
-    console.error("Error in /api/projects/:id:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Update project by ID
-app.put(
-  "/api/projects/:id",
-  requireAuth,
-  requireRole(["admin", "manager"]),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name, description, status, start_date, end_date } = req.body;
-
-      // Validate input
-      if (!name?.trim()) {
-        return res.status(400).json({ error: "Project name is required" });
-      }
-
-      // Map frontend field names to database column names
-      const updateData = {
-        name: name.trim(),
-        description: description?.trim() || null,
-        status: status || "planning",
-        deadline: end_date || null, // Map end_date to deadline
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data: project, error } = await supabase
-        .from("projects")
-        .update(updateData)
-        .eq("id", id)
-        .select(
-          `
-        *,
-        created_by_user:users!created_by(email, first_name, last_name),
-        project_members(
-          id,
-          role,
-          user:users(id, email, first_name, last_name)
-        )
-      `
-        )
-        .single();
-
-      if (error) {
-        console.error("Error updating project:", error);
-        return res.status(500).json({ error: "Failed to update project" });
-      }
-
-      res.json(project);
-    } catch (err) {
-      console.error("Error in PUT /api/projects/:id:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  }
-);
-
 // Get project members
 app.get("/api/projects/:id/members", requireAuth, async (req, res) => {
   try {
@@ -462,92 +365,50 @@ app.get("/api/projects/:id/members", requireAuth, async (req, res) => {
 // Get dashboard statistics
 app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
   try {
-    // Get projects user has access to (same logic as /api/projects endpoint)
-    let projectQuery = supabase.from("projects").select("status");
+    // Get overall counts with basic queries first
+    const { count: projectCount } = await supabase
+      .from("projects")
+      .select("*", { count: "exact", head: true });
 
-    // If not admin, only get projects where user is a member
-    if (req.user.role !== "admin") {
-      const { data: userProjects } = await supabase
-        .from("project_members")
-        .select("project_id")
-        .eq("user_id", req.user.id);
+    const { count: taskCount } = await supabase
+      .from("tasks")
+      .select("*", { count: "exact", head: true });
 
-      const projectIds = userProjects?.map((p) => p.project_id) || [];
-      if (projectIds.length > 0) {
-        projectQuery = projectQuery.in("id", projectIds);
-      } else {
-        // User has no project access, return zero counts
-        return res.json({
-          projectCount: 0,
-          activeProjects: 0,
-          completedProjects: 0,
-          taskCount: 0,
-          userTaskCount: 0,
-          overdueTaskCount: 0,
-          projects: { total: 0, active: 0, completed: 0, onHold: 0 },
-          tasks: {
-            total: 0,
-            myTasks: 0,
-            completed: 0,
-            inProgress: 0,
-            pending: 0,
-            overdue: 0,
-          },
-        });
-      }
-    }
+    const { count: userCount } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true });
 
-    const { data: projects } = await projectQuery;
+    // Get project status breakdown
+    const { data: projects } = await supabase.from("projects").select("status");
 
-    // Get only user's tasks (not all tasks in system)
+    // Get task status breakdown for current user
     const { data: userTasks } = await supabase
       .from("tasks")
-      .select("status, due_date")
+      .select("status")
       .eq("assigned_to", req.user.id);
 
-    // Calculate project stats (only projects user has access to)
-    const totalProjects = projects?.length || 0;
-    const activeProjects =
-      projects?.filter((p) => p.status === "active").length || 0;
-    const completedProjects =
-      projects?.filter((p) => p.status === "completed").length || 0;
+    const projectStats = {
+      total: projectCount || 0,
+      active: projects?.filter((p) => p.status === "active").length || 0,
+      completed: projects?.filter((p) => p.status === "completed").length || 0,
+      onHold: projects?.filter((p) => p.status === "on-hold").length || 0,
+    };
 
-    // Calculate task stats (only user's tasks)
-    const totalTasks = userTasks?.length || 0;
-    const userTaskCount = userTasks?.length || 0;
+    const taskStats = {
+      total: taskCount || 0,
+      myTasks: userTasks?.length || 0,
+      completed: userTasks?.filter((t) => t.status === "completed").length || 0,
+      inProgress:
+        userTasks?.filter((t) => t.status === "in-progress").length || 0,
+      pending: userTasks?.filter((t) => t.status === "pending").length || 0,
+      overdue: 0, // Could implement date-based logic here
+    };
 
-    // Calculate overdue tasks (tasks with due_date in the past and status not completed)
-    const today = new Date();
-    const overdueTaskCount =
-      userTasks?.filter((task) => {
-        if (!task.due_date || task.status === "completed") return false;
-        return new Date(task.due_date) < today;
-      }).length || 0;
-
-    // Return stats in the format expected by frontend
     res.json({
-      projectCount: totalProjects,
-      activeProjects: activeProjects,
-      completedProjects: completedProjects,
-      taskCount: totalTasks,
-      userTaskCount: userTaskCount,
-      overdueTaskCount: overdueTaskCount,
-      // Legacy nested format for compatibility (if needed elsewhere)
-      projects: {
-        total: totalProjects,
-        active: activeProjects,
-        completed: completedProjects,
-        onHold: projects?.filter((p) => p.status === "on-hold").length || 0,
-      },
-      tasks: {
-        total: totalTasks,
-        myTasks: userTaskCount,
-        completed:
-          userTasks?.filter((t) => t.status === "completed").length || 0,
-        inProgress:
-          userTasks?.filter((t) => t.status === "in-progress").length || 0,
-        pending: userTasks?.filter((t) => t.status === "pending").length || 0,
-        overdue: overdueTaskCount,
+      projects: projectStats,
+      tasks: taskStats,
+      users: {
+        total: userCount || 0,
       },
     });
   } catch (err) {
@@ -556,14 +417,11 @@ app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
   }
 });
 
+// ==========================================
 // VIEW ROUTES
 
 app.get("/", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.redirect("/dashboard");
-  } else {
-    res.redirect("/login");
-  }
+  res.render("home");
 });
 
 app.get("/login", (req, res) => {
@@ -579,14 +437,14 @@ app.get("/logout", (req, res, next) => {
     if (err) {
       return next(err);
     }
-    res.redirect("/login");
+    res.redirect("/");
   });
 });
 
-app.get("/dashboard", (req, res) => {
+app.get("/secrets", (req, res) => {
   console.log(req.user);
   if (req.isAuthenticated()) {
-    res.render("dashboard");
+    res.render("secrets");
   } else {
     res.redirect("/login");
   }
@@ -619,7 +477,7 @@ app.post("/login", (req, res, next) => {
       }
 
       console.log("Login successful for:", user.email);
-      return res.redirect("/dashboard");
+      return res.redirect("/secrets");
     });
   })(req, res, next);
 });
@@ -652,7 +510,7 @@ app.post("/register", async (req, res) => {
               {
                 email: email,
                 password: hash,
-                role: "manager", // Default role for new users - gives them project creation capabilities
+                role: "member", // Default role for new users
                 status: "active", // Default status
               },
             ])
@@ -666,7 +524,7 @@ app.post("/register", async (req, res) => {
           const user = result[0];
           req.login(user, (err) => {
             console.log("Registration successful");
-            res.redirect("/dashboard");
+            res.redirect("/secrets");
           });
         }
       });
@@ -731,6 +589,7 @@ passport.deserializeUser((user, cb) => {
   cb(null, user);
 });
 
+
 // Test route to check if Supabase connection works
 app.get("/test", async (req, res) => {
   try {
@@ -748,9 +607,10 @@ app.get("/test", async (req, res) => {
   }
 });
 
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(
-    `Project Dashboard available at http://localhost:${port}/dashboard`
+    `Project Dashboard available at http://localhost:${port}/secrets`
   );
 });

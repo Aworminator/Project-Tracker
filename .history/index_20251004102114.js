@@ -619,7 +619,7 @@ app.post("/login", (req, res, next) => {
       }
 
       console.log("Login successful for:", user.email);
-      return res.redirect("/dashboard");
+      return res.redirect("/secrets");
     });
   })(req, res, next);
 });
@@ -666,7 +666,7 @@ app.post("/register", async (req, res) => {
           const user = result[0];
           req.login(user, (err) => {
             console.log("Registration successful");
-            res.redirect("/dashboard");
+            res.redirect("/secrets");
           });
         }
       });
@@ -751,6 +751,6 @@ app.get("/test", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(
-    `Project Dashboard available at http://localhost:${port}/dashboard`
+    `Project Dashboard available at http://localhost:${port}/secrets`
   );
 });

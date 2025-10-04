@@ -605,7 +605,7 @@ let dashboard;
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", async function () {
-  if (window.location.pathname.includes("dashboard")) {
+  if (window.location.pathname.includes("secrets")) {
     // Wait for auth to be ready
     let attempts = 0;
     while (!window.authManager?.currentUser && attempts < 50) {
@@ -833,8 +833,12 @@ function showViewProjectModal(project) {
   statusBadge.textContent = project.status || "planning";
   statusBadge.className = `status-badge status-${project.status || "planning"}`;
 
-  document.getElementById("viewProjectEndDate").textContent = project.deadline
-    ? new Date(project.deadline).toLocaleDateString()
+  document.getElementById("viewProjectStartDate").textContent =
+    project.start_date
+      ? new Date(project.start_date).toLocaleDateString()
+      : "-";
+  document.getElementById("viewProjectEndDate").textContent = project.end_date
+    ? new Date(project.end_date).toLocaleDateString()
     : "-";
 
   // Show team members
@@ -875,8 +879,10 @@ function showEditProjectModal(project) {
     project.description || "";
   document.getElementById("editProjectStatusInput").value =
     project.status || "planning";
-  document.getElementById("editProjectEndDateInput").value = project.deadline
-    ? project.deadline.split("T")[0]
+  document.getElementById("editProjectStartDateInput").value =
+    project.start_date ? project.start_date.split("T")[0] : "";
+  document.getElementById("editProjectEndDateInput").value = project.end_date
+    ? project.end_date.split("T")[0]
     : "";
 
   // Show modal
@@ -905,7 +911,7 @@ async function submitEditProject(event) {
       closeModal("editProjectModal");
       // Reload projects to show updated data
       await dashboard.loadProjects();
-      dashboard.renderProjects();
+      dashboard.displayProjects();
     } else {
       const error = await response.json();
       showMessage(error.error || "Error updating project", "error");

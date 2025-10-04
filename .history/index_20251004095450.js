@@ -39,7 +39,9 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// ==========================================
 // MIDDLEWARE FUNCTIONS
+// ==========================================
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -64,7 +66,9 @@ const requireRole = (roles) => {
   };
 };
 
+// ==========================================
 // API ROUTES
+// ==========================================
 
 // Get current user info
 app.get("/api/user", requireAuth, (req, res) => {
@@ -231,7 +235,7 @@ app.post("/api/tasks", requireRole(["admin", "manager"]), async (req, res) => {
           title,
           description,
           project_id,
-          assigned_to: assigned_to || req.user.id, // Default to creator if no assignee
+          assigned_to,
           priority,
           due_date,
           created_by: req.user.id,
@@ -462,58 +466,27 @@ app.get("/api/projects/:id/members", requireAuth, async (req, res) => {
 // Get dashboard statistics
 app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
   try {
-    // Get projects user has access to (same logic as /api/projects endpoint)
-    let projectQuery = supabase.from("projects").select("status");
+    // Get project status breakdown
+    const { data: projects } = await supabase.from("projects").select("status");
 
-    // If not admin, only get projects where user is a member
-    if (req.user.role !== "admin") {
-      const { data: userProjects } = await supabase
-        .from("project_members")
-        .select("project_id")
-        .eq("user_id", req.user.id);
-
-      const projectIds = userProjects?.map((p) => p.project_id) || [];
-      if (projectIds.length > 0) {
-        projectQuery = projectQuery.in("id", projectIds);
-      } else {
-        // User has no project access, return zero counts
-        return res.json({
-          projectCount: 0,
-          activeProjects: 0,
-          completedProjects: 0,
-          taskCount: 0,
-          userTaskCount: 0,
-          overdueTaskCount: 0,
-          projects: { total: 0, active: 0, completed: 0, onHold: 0 },
-          tasks: {
-            total: 0,
-            myTasks: 0,
-            completed: 0,
-            inProgress: 0,
-            pending: 0,
-            overdue: 0,
-          },
-        });
-      }
-    }
-
-    const { data: projects } = await projectQuery;
-
-    // Get only user's tasks (not all tasks in system)
+    // Get task status breakdown and user's tasks
+    const { data: allTasks } = await supabase
+      .from("tasks")
+      .select("status, assigned_to, due_date");
     const { data: userTasks } = await supabase
       .from("tasks")
       .select("status, due_date")
       .eq("assigned_to", req.user.id);
 
-    // Calculate project stats (only projects user has access to)
+    // Calculate project stats
     const totalProjects = projects?.length || 0;
     const activeProjects =
       projects?.filter((p) => p.status === "active").length || 0;
     const completedProjects =
       projects?.filter((p) => p.status === "completed").length || 0;
 
-    // Calculate task stats (only user's tasks)
-    const totalTasks = userTasks?.length || 0;
+    // Calculate task stats
+    const totalTasks = allTasks?.length || 0;
     const userTaskCount = userTasks?.length || 0;
 
     // Calculate overdue tasks (tasks with due_date in the past and status not completed)
@@ -559,11 +532,7 @@ app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
 // VIEW ROUTES
 
 app.get("/", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.redirect("/dashboard");
-  } else {
-    res.redirect("/login");
-  }
+  res.render("home");
 });
 
 app.get("/login", (req, res) => {
@@ -579,14 +548,14 @@ app.get("/logout", (req, res, next) => {
     if (err) {
       return next(err);
     }
-    res.redirect("/login");
+    res.redirect("/");
   });
 });
 
-app.get("/dashboard", (req, res) => {
+app.get("/secrets", (req, res) => {
   console.log(req.user);
   if (req.isAuthenticated()) {
-    res.render("dashboard");
+    res.render("secrets");
   } else {
     res.redirect("/login");
   }
@@ -619,7 +588,7 @@ app.post("/login", (req, res, next) => {
       }
 
       console.log("Login successful for:", user.email);
-      return res.redirect("/dashboard");
+      return res.redirect("/secrets");
     });
   })(req, res, next);
 });
@@ -666,7 +635,7 @@ app.post("/register", async (req, res) => {
           const user = result[0];
           req.login(user, (err) => {
             console.log("Registration successful");
-            res.redirect("/dashboard");
+            res.redirect("/secrets");
           });
         }
       });
@@ -751,6 +720,6 @@ app.get("/test", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(
-    `Project Dashboard available at http://localhost:${port}/dashboard`
+    `Project Dashboard available at http://localhost:${port}/secrets`
   );
 });

@@ -302,6 +302,120 @@
       </div>
     </div>
 
+    <!-- View Project Modal -->
+    <div class="modal" id="viewProjectModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Project Details</h3>
+          <button class="close-btn" onclick="closeModal('viewProjectModal')">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="project-details">
+            <div class="detail-group">
+              <label>Project Name:</label>
+              <span id="viewProjectName">-</span>
+            </div>
+            <div class="detail-group">
+              <label>Description:</label>
+              <p id="viewProjectDescription">-</p>
+            </div>
+            <div class="detail-group">
+              <label>Status:</label>
+              <span id="viewProjectStatus" class="status-badge">-</span>
+            </div>
+            <div class="detail-group">
+              <label>End Date:</label>
+              <span id="viewProjectEndDate">-</span>
+            </div>
+            <div class="detail-group">
+              <label>Team Members:</label>
+              <div id="viewProjectTeam" class="team-list">-</div>
+            </div>
+            <div class="detail-group">
+              <label>Progress:</label>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div id="viewProjectProgress" class="progress-fill"></div>
+                </div>
+                <span id="viewProjectProgressText">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('viewProjectModal')"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div class="modal" id="editProjectModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Project</h3>
+          <button class="close-btn" onclick="closeModal('editProjectModal')">
+            &times;
+          </button>
+        </div>
+        <form id="editProjectForm" onsubmit="submitEditProject(event)">
+          <div class="modal-body">
+            <input type="hidden" id="editProjectId" />
+            <div class="form-group">
+              <label for="editProjectName">Project Name</label>
+              <input
+                type="text"
+                id="editProjectNameInput"
+                name="name"
+                required
+                maxlength="100"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editProjectDescription">Description</label>
+              <textarea
+                id="editProjectDescriptionInput"
+                name="description"
+                rows="4"
+                maxlength="500"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="editProjectStatus">Status</label>
+              <select id="editProjectStatusInput" name="status" required>
+                <option value="planning">Planning</option>
+                <option value="active">Active</option>
+                <option value="on-hold">On Hold</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editProjectEndDate">End Date</label>
+              <input type="date" id="editProjectEndDateInput" name="end_date" />
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeModal('editProjectModal')"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Message Container -->
     <div class="message-container" id="messageContainer">
       <div class="message" id="message"></div>

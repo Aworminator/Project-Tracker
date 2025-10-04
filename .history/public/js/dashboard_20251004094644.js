@@ -605,7 +605,7 @@ let dashboard;
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", async function () {
-  if (window.location.pathname.includes("dashboard")) {
+  if (window.location.pathname.includes("secrets")) {
     // Wait for auth to be ready
     let attempts = 0;
     while (!window.authManager?.currentUser && attempts < 50) {

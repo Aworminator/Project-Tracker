@@ -39,7 +39,9 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// ==========================================
 // MIDDLEWARE FUNCTIONS
+
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -64,7 +66,9 @@ const requireRole = (roles) => {
   };
 };
 
+// ==========================================
 // API ROUTES
+// ==========================================
 
 // Get current user info
 app.get("/api/user", requireAuth, (req, res) => {
@@ -559,11 +563,7 @@ app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
 // VIEW ROUTES
 
 app.get("/", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.redirect("/dashboard");
-  } else {
-    res.redirect("/login");
-  }
+  res.render("home");
 });
 
 app.get("/login", (req, res) => {
@@ -579,14 +579,14 @@ app.get("/logout", (req, res, next) => {
     if (err) {
       return next(err);
     }
-    res.redirect("/login");
+    res.redirect("/");
   });
 });
 
-app.get("/dashboard", (req, res) => {
+app.get("/secrets", (req, res) => {
   console.log(req.user);
   if (req.isAuthenticated()) {
-    res.render("dashboard");
+    res.render("secrets");
   } else {
     res.redirect("/login");
   }
@@ -619,7 +619,7 @@ app.post("/login", (req, res, next) => {
       }
 
       console.log("Login successful for:", user.email);
-      return res.redirect("/dashboard");
+      return res.redirect("/secrets");
     });
   })(req, res, next);
 });
@@ -666,7 +666,7 @@ app.post("/register", async (req, res) => {
           const user = result[0];
           req.login(user, (err) => {
             console.log("Registration successful");
-            res.redirect("/dashboard");
+            res.redirect("/secrets");
           });
         }
       });
@@ -751,6 +751,6 @@ app.get("/test", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(
-    `Project Dashboard available at http://localhost:${port}/dashboard`
+    `Project Dashboard available at http://localhost:${port}/secrets`
   );
 });

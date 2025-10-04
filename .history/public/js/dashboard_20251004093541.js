@@ -605,7 +605,7 @@ let dashboard;
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", async function () {
-  if (window.location.pathname.includes("dashboard")) {
+  if (window.location.pathname.includes("secrets")) {
     // Wait for auth to be ready
     let attempts = 0;
     while (!window.authManager?.currentUser && attempts < 50) {
@@ -833,6 +833,7 @@ function showViewProjectModal(project) {
   statusBadge.textContent = project.status || "planning";
   statusBadge.className = `status-badge status-${project.status || "planning"}`;
 
+  document.getElementById("viewProjectStartDate").textContent = "-"; // Database doesn't have start_date
   document.getElementById("viewProjectEndDate").textContent = project.deadline
     ? new Date(project.deadline).toLocaleDateString()
     : "-";
@@ -875,6 +876,8 @@ function showEditProjectModal(project) {
     project.description || "";
   document.getElementById("editProjectStatusInput").value =
     project.status || "planning";
+  document.getElementById("editProjectStartDateInput").value = 
+    ""; // Database doesn't have start_date field
   document.getElementById("editProjectEndDateInput").value = project.deadline
     ? project.deadline.split("T")[0]
     : "";

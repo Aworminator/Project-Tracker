@@ -1048,15 +1048,6 @@ body.role-member .menu-item.member-only {
   display: flex;
 }
 
-/* Elements visible to all authenticated users */
-.all-users {
-  display: block;
-}
-
-.menu-item.all-users {
-  display: flex;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .dashboard-container {

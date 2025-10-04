@@ -605,7 +605,7 @@ let dashboard;
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", async function () {
-  if (window.location.pathname.includes("dashboard")) {
+  if (window.location.pathname.includes("secrets")) {
     // Wait for auth to be ready
     let attempts = 0;
     while (!window.authManager?.currentUser && attempts < 50) {
@@ -712,7 +712,7 @@ async function viewProject(projectId) {
     const response = await fetch(`/api/projects/${projectId}`, {
       credentials: "include",
     });
-
+    
     if (response.ok) {
       const project = await response.json();
       showViewProjectModal(project);
@@ -725,22 +725,11 @@ async function viewProject(projectId) {
   }
 }
 
-async function editProject(projectId) {
-  try {
-    const response = await fetch(`/api/projects/${projectId}`, {
-      credentials: "include",
-    });
-
-    if (response.ok) {
-      const project = await response.json();
-      showEditProjectModal(project);
-    } else {
-      showMessage("Error loading project details", "error");
-    }
-  } catch (error) {
-    console.error("Error loading project for edit:", error);
-    showMessage("Error loading project details", "error");
-  }
+function editProject(projectId) {
+  showMessage(
+    `Editing project ${projectId} - This would open an edit form`,
+    "info"
+  );
 }
 
 function addTaskToProject(projectId) {
@@ -820,100 +809,6 @@ function showInviteUserModal() {
     "Invite user functionality will be implemented with Supabase Auth",
     "info"
   );
-}
-
-// Project Modal Functions
-function showViewProjectModal(project) {
-  // Populate view modal fields
-  document.getElementById("viewProjectName").textContent = project.name || "-";
-  document.getElementById("viewProjectDescription").textContent =
-    project.description || "-";
-
-  const statusBadge = document.getElementById("viewProjectStatus");
-  statusBadge.textContent = project.status || "planning";
-  statusBadge.className = `status-badge status-${project.status || "planning"}`;
-
-  document.getElementById("viewProjectEndDate").textContent = project.deadline
-    ? new Date(project.deadline).toLocaleDateString()
-    : "-";
-
-  // Show team members
-  const teamContainer = document.getElementById("viewProjectTeam");
-  if (project.project_members && project.project_members.length > 0) {
-    teamContainer.innerHTML = project.project_members
-      .map(
-        (member) => `
-        <div class="team-member">
-          <span class="member-name">${member.user?.first_name || ""} ${
-          member.user?.last_name || ""
-        }</span>
-          <span class="member-role">(${member.role})</span>
-        </div>
-      `
-      )
-      .join("");
-  } else {
-    teamContainer.innerHTML = "<span>No team members assigned</span>";
-  }
-
-  // Calculate and show progress (this is a placeholder - you might want to calculate based on tasks)
-  const progress = project.progress || 0;
-  document.getElementById("viewProjectProgress").style.width = `${progress}%`;
-  document.getElementById(
-    "viewProjectProgressText"
-  ).textContent = `${progress}%`;
-
-  // Show modal
-  showModal("viewProjectModal");
-}
-
-function showEditProjectModal(project) {
-  // Populate edit modal fields
-  document.getElementById("editProjectId").value = project.id;
-  document.getElementById("editProjectNameInput").value = project.name || "";
-  document.getElementById("editProjectDescriptionInput").value =
-    project.description || "";
-  document.getElementById("editProjectStatusInput").value =
-    project.status || "planning";
-  document.getElementById("editProjectEndDateInput").value = project.deadline
-    ? project.deadline.split("T")[0]
-    : "";
-
-  // Show modal
-  showModal("editProjectModal");
-}
-
-async function submitEditProject(event) {
-  event.preventDefault();
-
-  const projectId = document.getElementById("editProjectId").value;
-  const formData = new FormData(event.target);
-  const projectData = Object.fromEntries(formData.entries());
-
-  try {
-    const response = await fetch(`/api/projects/${projectId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(projectData),
-    });
-
-    if (response.ok) {
-      showMessage("Project updated successfully", "success");
-      closeModal("editProjectModal");
-      // Reload projects to show updated data
-      await dashboard.loadProjects();
-      dashboard.renderProjects();
-    } else {
-      const error = await response.json();
-      showMessage(error.error || "Error updating project", "error");
-    }
-  } catch (error) {
-    console.error("Error updating project:", error);
-    showMessage("Error updating project", "error");
-  }
 }
 
 // Modal click-outside-to-close functionality

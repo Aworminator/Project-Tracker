@@ -751,6 +751,6 @@ app.get("/test", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(
-    `Project Dashboard available at http://localhost:${port}/dashboard`
+    `Project Dashboard available at http://localhost:${port}/secrets`
   );
 });
